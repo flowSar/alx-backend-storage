@@ -1,2 +1,2 @@
 // display the number of document in the collection
-db.users.count()
+db.school.count();
