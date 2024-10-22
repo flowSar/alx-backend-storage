@@ -1,3 +1,2 @@
 // insert an object to a document
 db.school.insert({ "name": "Holberton school" })
-
