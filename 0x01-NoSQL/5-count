@@ -1,2 +1,2 @@
 // display the number of document in the collection
-db.user.count()
+db.users.count()
