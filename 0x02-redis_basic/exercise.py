@@ -2,7 +2,7 @@
 """module fo dealing with redis"""
 import redis
 import uuid
-from typing import Union
+from typing import Union, Optional, Callable
 
 
 class Cache:
@@ -21,3 +21,22 @@ class Cache:
             data = str(data)
         self._redis.set(key, data)
         return key
+    
+    def get(self, key: str, fn:  Optional[Callable] = None) -> str:
+        """retreive data from redis"""
+        data = self._redis.get(key)
+        if data is None:
+            return None
+
+        if fn is not None:
+            return fn(data)
+
+        return data 
+    
+    def get_str(self):
+        """"""
+        pass
+    
+    def get_int(self):
+        """"""
+        pass
