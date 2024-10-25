@@ -1,2 +1,2 @@
 // delete a document with name="Holberton school"
-db.school.delete({name: ""Holberton school""}, { multi: true })
+db.school.delete({name: "Holberton school"}, { multi: true })
