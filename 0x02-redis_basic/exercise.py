@@ -16,6 +16,39 @@ def count_calls(func: Callable) -> Callable:
     return wrapper
 
 
+def call_history(method: Callable) -> Callable:
+    """call_history"""
+    inkey = method.__qualname__ + ":inputs"
+    outkey = method.__qualname__ + ":outputs"
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """wrapper"""
+        self._redis.rpush(inkey, str(args))
+        res = method(self, *args, **kwargs)
+        self._redis.rpush(outkey, str(res))
+        return res
+
+    return wrapper
+
+
+def replay(method: Callable) -> None:
+    """replay"""
+    input_key = "{}:inputs".format(method.__qualname__)
+    output_key = "{}:outputs".format(method.__qualname__)
+
+    inputs = method.__self__._redis.lrange(input_key, 0, -1)
+    outputs = method.__self__._redis.lrange(output_key, 0, -1)
+
+    print("{} was called {} times:".format(method.__qualname__, len(inputs)))
+    for inp, out in zip(inputs, outputs):
+        print(
+            "{}(*{}) -> {}".format(
+                method.__qualname__, inp.decode("utf-8"), out.decode("utf-8")
+            )
+        )
+
+
 class Cache:
     """Cache class"""
 
