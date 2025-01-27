@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """module fo dealing with redis"""
+
 import redis
 import uuid
-from typing import Union, Optional, Callable
+from typing import Union, Callable, Optional
 from functools import wraps
 
 
-def count_calls(func: Callable) -> Callable:
+def count_calls(method: Callable) -> Callable:
     """Decorator to count the number of calls to a function."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        wrapper.store += 1
-        return func(*args, **kwargs)
-    wrapper.store = 0
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """wrapper"""
+        key = method.__qualname__
+        self._redis.incr(key)
+        return method(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -33,7 +37,7 @@ def call_history(method: Callable) -> Callable:
 
 
 def replay(method: Callable) -> None:
-    """replay"""
+    """replay function"""
     input_key = "{}:inputs".format(method.__qualname__)
     output_key = "{}:outputs".format(method.__qualname__)
 
@@ -53,37 +57,32 @@ class Cache:
     """Cache class"""
 
     def __init__(self):
-        """create redis object"""
+        """initialize object attributes"""
         self._redis = redis.Redis()
         self._redis.flushdb()
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """store data with a generated key to the redis
         and return the key of data"""
-        key = str(uuid.uuid4())
-        if isinstance(data, (uuid.UUID)):
-            data = str(data)
-        self._redis.set(key, data)
-        return key
+        keyx = str(uuid.uuid4())
+        self._redis.set(keyx, data)
+        return keyx
 
-    def get(self, key: str, fn: Optional[Callable] = None) -> str:
+    def get(
+        self, key: str, fn: Optional[Callable] = None
+    ) -> Union[str, bytes, int, float]:
         """retreive data from redis"""
-        data = self._redis.get(key)
-        if data is None:
-            return None
-
-        if fn is not None:
-            return fn(data)
-
-        return data
+        value = self._redis.get(key)
+        if fn:
+            value = fn(value)
+        return value
 
     def get_str(self, key: str) -> str:
         """get data format str"""
-        data = self._redis.get(str)
-        return str(data)
+        return self.get(key, fn=str)
 
     def get_int(self, key: str) -> int:
         """get data format int"""
-        data = self._redis.get(str)
-        return int(data)
+        return self.get(key, fn=int)
